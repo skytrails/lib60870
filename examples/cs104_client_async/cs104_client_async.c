@@ -22,13 +22,16 @@ static void
 rawMessageHandler (void* parameter, uint8_t* msg, int msgSize, bool sent)
 {
     if (sent)
-        printf("SEND: ");
+        printf("SEND: >>");
     else
-        printf("RCVD: ");
+        printf("RCVD: <<");
 
     int i;
     for (i = 0; i < msgSize; i++) {
         printf("%02x ", msg[i]);
+    }
+    if (msgSize == 6 && msg[2] == 0x0b) {
+        printf("    >>    从站响应开启链路");
     }
 
     printf("\n");
@@ -156,11 +159,13 @@ main(int argc, char** argv)
         CS104_Connection_setLocalAddress(con, localIp, localPort);
 
     /* uncomment to log messages */
-    //CS104_Connection_setRawMessageHandler(con, rawMessageHandler, NULL);
+    CS104_Connection_setRawMessageHandler(con, rawMessageHandler, NULL);
 
     CS104_Connection_connectAsync(con);
 
     bool startDTSent = false;
+    
+    bool sendGiSent = false;
 
     uint64_t lastGiSent = 0;
 
@@ -169,6 +174,7 @@ main(int argc, char** argv)
         Semaphore_wait(lastEventLock);
 
         if (lastEvent == CS104_CONNECTION_OPENED) {
+            printf("lastGiSent!\n");
             CS104_Connection_sendStartDT(con);
             startDTSent = true;
         }
@@ -184,9 +190,11 @@ main(int argc, char** argv)
                 if (currentTime < lastGiSent)
                     lastGiSent = currentTime;
 
-                if (currentTime > lastGiSent + 10000) {
+                if (currentTime > lastGiSent + 10000 && !sendGiSent) {
                     lastGiSent = currentTime;
 
+                    printf("cs104 interrogation!\n");
+                    sendGiSent = true;
                     CS104_Connection_sendInterrogationCommand(con, CS101_COT_ACTIVATION, 1, IEC60870_QOI_STATION);
                 }
             }

@@ -1125,19 +1125,35 @@ static void
 encodeIdentificationField(CS104_Connection self, Frame frame, TypeID typeId,
         int vsq, CS101_CauseOfTransmission cot, int ca)
 {
+    uint8_t* buf = T104Frame_getBuffer(frame);
+    size_t size = T104Frame_getMsgSize(frame);
+
     T104Frame_setNextByte(frame, typeId);
     T104Frame_setNextByte(frame, (uint8_t) vsq);
 
+    buf = T104Frame_getBuffer(frame);
+    size = T104Frame_getMsgSize(frame);
+    for (int i = 0; i < size; i++) {
+        printf("%0.2x ", buf[i]);
+    }
+    printf("\n");
     /* encode COT */
     T104Frame_setNextByte(frame, (uint8_t) cot);
     if (self->alParameters.sizeOfCOT == 2)
         T104Frame_setNextByte(frame, (uint8_t) self->alParameters.originatorAddress);
 
+    buf = T104Frame_getBuffer(frame);
+    size = T104Frame_getMsgSize(frame);
+    for (int i = 0; i < size; i++) {
+        printf("%0.2x ", buf[i]);
+    }
+    printf("\n");
     /* encode CA */
     T104Frame_setNextByte(frame, (uint8_t)(ca & 0xff));
     if (self->alParameters.sizeOfCA == 2)
         T104Frame_setNextByte(frame, (uint8_t) ((ca & 0xff00) >> 8));
 }
+
 
 static void
 encodeIOA(CS104_Connection self, Frame frame, int ioa)
